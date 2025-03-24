@@ -15,6 +15,16 @@ example R9 380 with memory clocked at 1.5Ghz:
     Running copy test.
     128 GB in 906.2 ms (141.3 GB/s)
 
+## Benchmarking CPU+GPU on CIX systems:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential git lmbench opencl-headers
+git clone https://github.com/RadxaYuntian/cl-mem-cix.git
+cd cl-mem-cix
+make
+/usr/lib/lmbench/bin/bw_mem -P 10 -N 2 1024M rd & ./cl-mem
+```
 
 # Thanks
 
