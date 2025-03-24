@@ -2,7 +2,7 @@
 OPENCL_HEADERS = "/opt/AMDAPPSDK-3.0/include"
 # By default libOpenCL.so is searched in default system locations, this path
 # lets you adds one more directory to the search path.
-LIBOPENCL = "/opt/amdgpu-pro/lib/x86_64-linux-gnu"
+LIBOPENCL = "/opt/cixgpu-pro/lib/aarch64-linux-gnu"
 
 CC = gcc -O2 -flto
 CPPFLAGS = -std=gnu99 -pedantic -Wextra -Wall -ggdb \
