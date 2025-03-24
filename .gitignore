@@ -1,0 +1,4 @@
+_kernel.h
+.vscode*
+cl-mem
+*.o
