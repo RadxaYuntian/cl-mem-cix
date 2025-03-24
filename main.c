@@ -377,7 +377,7 @@ int read_last_line(char *buf, size_t len, int block)
     return 1;
 }
 
-void run_opencl(cl_context ctx, cl_command_queue queue, cl_kernel* tests)
+void run_opencl(cl_context ctx, cl_command_queue* queues, cl_kernel* tests)
 {
     cl_mem              buf_test, buf_dbg;
     void                *dbg = NULL;
@@ -405,9 +405,9 @@ void run_opencl(cl_context ctx, cl_command_queue queue, cl_kernel* tests)
         check_clSetKernelArg(tests[test], 0, &buf_test);
         fprintf(stderr, "Running %s test.\n", test_names[test]);
         uint64_t t0 = now();
-        check_clEnqueueNDRangeKernel(queue, tests[test], 1, NULL,
+        check_clEnqueueNDRangeKernel(queues[test], tests[test], 1, NULL,
 	        &global_ws, &local_ws, 0, NULL, NULL);
-        cl_int status = clFinish(queue);
+        cl_int status = clFinish(queues[test]);
         CL_CHECK(status);
         uint64_t t1 = now();
         fprintf(stderr, "%d GB in %.1f ms (%.1f GB/s)\n", REPS,
@@ -519,6 +519,7 @@ void run_bench()
 //    cl_kernel		k_rounds[PARAM_K];
     uint num_tests = sizeof(test_names)/sizeof(test_names[0]);
     cl_kernel   tests[num_tests];
+    cl_command_queue queues[num_tests];
     cl_int		status;
     scan_platforms(&plat_id, &dev_id);
     if (!plat_id || !dev_id)
@@ -528,11 +529,6 @@ void run_bench()
 	    NULL, NULL, &status);
     if (status != CL_SUCCESS || !context)
 	fatal("clCreateContext (%d)\n", status);
-    /* Creating command queue associate with the context.*/
-    cl_command_queue queue = clCreateCommandQueue(context, dev_id,
-	    0, &status);
-    if (status != CL_SUCCESS || !queue)
-	fatal("clCreateCommandQueue (%d)\n", status);
     /* Create program object */
     cl_program program;
     const char *source;
@@ -568,16 +564,22 @@ void run_bench()
 	    tests[test] = clCreateKernel(program, name, &status);
 	    if (status != CL_SUCCESS || !tests[test])
 	        fatal("clCreateKernel (%d)\n", status);
+        /* Creating command queue associate with the context.*/
+        queues[test] = clCreateCommandQueue(context, dev_id,
+            0, &status);
+        if (status != CL_SUCCESS || !queues[test])
+            fatal("clCreateCommandQueue (%d)\n", status);
     }
     // Run
-    run_opencl(context, queue, tests);
+    run_opencl(context, queues, tests);
     // Release resources
     assert(CL_SUCCESS == 0);
     status = CL_SUCCESS;
     for (unsigned test = 0; test < num_tests; test++)
 	    status |= clReleaseKernel(tests[test]);
     status |= clReleaseProgram(program);
-    status |= clReleaseCommandQueue(queue);
+    for (unsigned test = 0; test < num_tests; test++)
+	    status |= clReleaseCommandQueue(queues[test]);
     status |= clReleaseContext(context);
     if (status)
 	    fprintf(stderr, "Cleaning resources failed\n");
